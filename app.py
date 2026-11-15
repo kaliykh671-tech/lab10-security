@@ -20,8 +20,8 @@ def init_db():
 def search():
     name = request.args.get("name", "")
     conn = sqlite3.connect(DB)
-    query = "SELECT id, name, qty FROM items WHERE name = '%s'" % name
-    rows = conn.execute(query).fetchall()
+    query = "SELECT id, name, qty FROM items WHERE name = ?"
+    rows = conn.execute(query, (name,)).fetchall()
     conn.close()
     return jsonify(rows=rows)
 
