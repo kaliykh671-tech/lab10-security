@@ -1,0 +1,37 @@
+name: security
+
+on: [push, pull_request]
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: SAST - semgrep
+        run: pipx run semgrep scan --config p/python --metrics off .
+
+      - name: SCA - pip-audit
+        run: pipx run pip-audit -r requirements.txt
+
+      - name: Secrets - gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: DAST - ZAP baseline
+        run: |
+          docker run -d --name juice -p 3000:3000 bkimminich/juice-shop
+          sleep 20
+          docker run --rm --network host -v "$PWD:/zap/wrk:rw" \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py -t http://localhost:3000 -r zap.html -I
