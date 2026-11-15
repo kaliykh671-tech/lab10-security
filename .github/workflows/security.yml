@@ -5,7 +5,6 @@ on: [push, pull_request]
 jobs:
   scan:
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -18,17 +17,21 @@ jobs:
           python-version: "3.12"
 
       - name: SAST - semgrep
+        continue-on-error: true
         run: pipx run semgrep scan --config p/python --metrics off .
 
       - name: SCA - pip-audit
+        continue-on-error: true
         run: pipx run pip-audit -r requirements.txt
 
       - name: Secrets - gitleaks
+        continue-on-error: true
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: DAST - ZAP baseline
+        continue-on-error: true
         run: |
           docker run -d --name juice -p 3000:3000 bkimminich/juice-shop
           sleep 20
